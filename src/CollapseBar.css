@@ -1,0 +1,14 @@
+.collapseBar {
+	width: 100%;
+	background: black;
+	outline: 0;
+	border: none;
+	font-size: 20px;
+	color: white;
+	text-align: left;
+	padding: 5px;
+}
+
+.collapseBar:hover {
+	background: rgb(64, 64, 64);
+}
