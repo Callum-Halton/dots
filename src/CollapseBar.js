@@ -1,6 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
-import { faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import { faChevronUp, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 import './CollapseBar.css'
 
 const iconStyle = {
@@ -10,9 +9,10 @@ const iconStyle = {
 }
 
 export default function CollapseBar(props) {
-	let {icon, title, togglePanel, open, top} = props;
+	let {icon, togglePanel, open, top, optionGroupKey} = props;
+	let title = props.optionGroupKey === 'sample' ? 'Sampling' : 'Rendering';
 	return (
-		<button onClick={() => togglePanel(title)} className="collapseBar">
+		<button onClick={() => togglePanel(optionGroupKey)} className="collapseBar">
 			<FontAwesomeIcon
 				icon={icon}
 				style={{...iconStyle, ...{float: "left"}}}
