@@ -26,15 +26,8 @@ const greyStyle = {
 	fontWeight: "normal",
 }
 
-
 export default function OptionCard(props) {
-	let { name, val, greyedPrefix, greyed,
-		normallyHidden, changeOptionVal, first, intOptionInfo} = props;
-	let icon = normallyHidden ?
-		<FontAwesomeIcon
-			icon={faCaretRight}
-			style={{color: "grey", marginRight: "30px"}}
-		/> : '';
+	let { val, greyedPrefix, greyed, changeOptionVal, intOptionInfo} = props;
 
 	let borderTop;
 	let nameStyle = {
@@ -42,11 +35,17 @@ export default function OptionCard(props) {
 		width: "calc(50vw - 120px)",
 	};
 
-	if (normallyHidden) {
+	let icon = null;
+	if (props.normallyHidden) {
 		borderTop = "none";
+		icon =
+			<FontAwesomeIcon
+				icon={faCaretRight}
+				style={{color: "grey", marginRight: "30px"}}
+			/>;
 		nameStyle = {...nameStyle, ...{paddingTop: "5px"}};
 	} else {
-		borderTop = first ? "none" : "2px solid grey";
+		borderTop = props.first ? "none" : "2px solid grey";
 	}
 
 	let rowStyle = {
@@ -70,16 +69,16 @@ export default function OptionCard(props) {
  			input =
 	 			<IntegerInput
 	        disabled={props.disabled}
-	        val={props.val}
+	        val={val}
 	        changeOptionVal={props.changeOptionVal}
 	      />
  		}
  	} else {
  		input =
 			<BlackCheckbox
-	    			checked={val}
-	    			disabled={disabled}
-	    			onChange={() => changeOptionVal(!val)}
+  			checked={val}
+  			disabled={disabled}
+  			onChange={() => changeOptionVal(!val)}
 	    />;
 	}
 
@@ -91,7 +90,7 @@ export default function OptionCard(props) {
     			{greyedPrefix}
     		</span>
     		<span style={disabled ? greyStyle : blackStyle} >
-    			{name}
+    			{props.name}
     		</span>
     	</td>
     	<td /*style={{paddingTop: "14px"}}*/>

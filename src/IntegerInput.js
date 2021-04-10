@@ -28,7 +28,6 @@ export default function IntegerInput(props) {
   return (
 	<CustomTextField
 	  size="small"
-	  //id="outlined-number"
 	  label="Integer"
 	  type="number"
 	  InputLabelProps={{

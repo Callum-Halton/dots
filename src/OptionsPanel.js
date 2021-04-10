@@ -14,7 +14,6 @@ const panelContainerStyle = {
 	marginBottom: "10px",
 }
 
-// 60 + 2(4) +
 const optionsTableBodyStyle = {
 	display: "block",
 	maxHeight: `calc(100vh - ${60 + 2*4 + 2*33 + 2*10 + 52}px)`,
@@ -52,7 +51,7 @@ export default function OptionsPanel(props) {
 	}
 
 	let icon = optionGroupKey === 'sample' ? faBullseye : faSprayCan;
-	let componentElements = [
+	let panelElements = [
   	<CollapseBar
   		icon={icon}
   		optionGroupKey={optionGroupKey}
@@ -64,7 +63,7 @@ export default function OptionsPanel(props) {
 	];
 
 	if (props.open) {
-		componentElements.splice(props.top ? 0 : 1, 0 ,
+		panelElements.splice(props.top ? 0 : 1, 0 ,
 			<div style={panelContainerStyle} key="panelContainer">
 				<ActionButton
 					actionCall={props.actionCall}
@@ -79,7 +78,7 @@ export default function OptionsPanel(props) {
   	);
 	}
   return (
-  	<div style={{flex: "0 0 auto"}}>{componentElements}</div>
+  	<div style={{flex: "0 0 auto"}}>{panelElements}</div>
   );
 
 }

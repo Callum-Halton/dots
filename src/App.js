@@ -1,3 +1,4 @@
+// REMEMBER: remove app.css from imports if never used
 import './App.css';
 import React, { Component } from 'react';
 import OptionsPanel from './OptionsPanel.js';
@@ -15,16 +16,16 @@ class IntOptionInfo {
 }
 
 class Option {
-  constructor(val, name, intOptionInfo, disabled, dependencyKey,
-      dependencyValToGrey, hideWhenGrey, greyedPrefix) {
+  constructor(val, name, intOptionInfo, dependencyKey, dependencyValToGrey,
+      hideWhenGrey, greyedPrefix, disabled) {
     this.val = val;
     this.name = name;
     this.intOptionInfo = intOptionInfo || null;
-    this.disabled = disabled || false;
     this.dependencyKey = dependencyKey || null;
     this.dependencyValToGrey = dependencyValToGrey;
     this.hideWhenGrey = hideWhenGrey || false;
     this.greyedPrefix = greyedPrefix || '';
+    this.disabled = false;
   }
 }
 
@@ -46,7 +47,7 @@ export default class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      openOptionPanel: 'sample',
+      openOptionPanel: null,//'sample',
       options: {
         sample: {
           sampleLimit: new Option(
@@ -56,16 +57,16 @@ export default class App extends Component {
           maxExclRadius: new Option(
             24, 'Exclusion Radius',
             new IntOptionInfo(20, 1, 40, false, 'minExclRadius'),
-            false, 'varyDotDensity', false, false, 'Max '
+            'varyDotDensity', false, false, 'Max '
           ),
           varyDotDensity: new Option(true, 'Vary Dot Density'),
           minExclRadius: new Option(
             6, 'Min Exclusion Radius',
             new IntOptionInfo(true, 1, 20, false, null, 'maxExclRadius'),
-            false, 'varyDotDensity', false, true
+            'varyDotDensity', false, true
           ),
           whiteDotsOnBlackBackground: new Option(
-            true, 'White Dots On Black Background', null, false,
+            true, 'White Dots On Black Background', null,
             'varyDotDensity', false, true
           ),
         },
@@ -77,18 +78,18 @@ export default class App extends Component {
           maxDotDiameter: new Option(
             6, 'Dot Diameter',
             new IntOptionInfo(5, 0, 30, false, 'minDotDiameter'),
-            false, 'varyDotDiameter', false, false, 'Max '
+            'varyDotDiameter', false, false, 'Max '
           ),
           varyDotDiameter: new Option(true, 'Vary Dot Diameter'),
           minDotDiameter: new Option(
             3, 'Min Dot Diameter',
             new IntOptionInfo(true, 0, 20, false, null, 'maxDotDiameter'),
-            false, 'varyDotDiameter', false, true
+            'varyDotDiameter', false, true
           ),
           minLDiffTwixDotnBackgroundToDraw: new Option(
             5, 'Minimum Difference in Intensity from Background to Draw',
             new IntOptionInfo(true, 0, 256, true),
-            false, 'drawSpecificNumOfDots', true, false
+            'drawSpecificNumOfDots', true, false
           ),
           drawSpecificNumOfDots: new Option(
             false, 'Draw Specific Number of Dots'
@@ -96,7 +97,7 @@ export default class App extends Component {
           totDotsToDraw: new Option(
             1000, 'Total Number of Dots to Draw',
             new IntOptionInfo(false, 0),
-            false, 'drawSpecificNumOfDots', false, true
+            'drawSpecificNumOfDots', false, true
           ),
         }
       }
@@ -182,7 +183,32 @@ export default class App extends Component {
   }
 
   render () {
-    let { openOptionPanel, options } = this.state
+    let { openOptionPanel, options } = this.state;
+    let appElements = [<TitleBar key="TitleBar" />];
+    for (let optionGroupKey in options) {
+      appElements.push(
+        <OptionsPanel
+          optionGroupKey={optionGroupKey}
+          actionCall={this[`${optionGroupKey}Now`]}
+          relevantOptions={options[optionGroupKey]}
+          changeOptionVal={this.changeOptionVal}
+          open={openOptionPanel === optionGroupKey}
+          togglePanel={this.togglePanel}
+          top={optionGroupKey === "sample"}
+          key={optionGroupKey}
+        />
+      );
+
+      if (optionGroupKey === "sample") {
+        appElements.push(
+          <Stage
+            blackBackground={options.render.whiteDotsOnBlackBackground.val}
+            key="Stage"
+          />
+        );
+      }
+    }
+
     return (
       <div
         style={{
@@ -191,7 +217,14 @@ export default class App extends Component {
           height: "100vh",
         }}
       >
-        <TitleBar/>
+        {appElements}
+      </div>
+    );
+  }
+}
+
+/*
+<TitleBar/>
         <OptionsPanel
           optionGroupKey="sample"
           actionCall={this.sampleNow}
@@ -201,9 +234,7 @@ export default class App extends Component {
           togglePanel={this.togglePanel}
           top={true}
         />
-        <Stage
-          blackBackground={options.sample.whiteDotsOnBlackBackground.val}
-        />
+
         <OptionsPanel
           optionGroupKey="render"
           actionCall={this.renderNow}
@@ -213,8 +244,4 @@ export default class App extends Component {
           togglePanel={this.togglePanel}
           top={false}
         />
-      </div>
-    );
-  }
-}
-
+*/
