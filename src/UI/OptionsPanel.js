@@ -5,7 +5,6 @@ import ActionButton from './ActionButton.js';
 
 const optionsTableStyle = {
 	borderCollapse: "collapse",
-	backgroundColor: "white",
 };
 
 const panelContainerStyle = {
@@ -66,6 +65,7 @@ export default function OptionsPanel(props) {
 		panelElements.splice(props.top ? 0 : 1, 0 ,
 			<div style={panelContainerStyle} key="panelContainer">
 				<ActionButton
+					disabled={props.disableActionButton}
 					actionCall={props.actionCall}
 					optionGroupKey={optionGroupKey}
 					icon={icon}
@@ -77,8 +77,6 @@ export default function OptionsPanel(props) {
 	  	</div>
   	);
 	}
-  return (
-  	<div style={{flex: "0 0 auto"}}>{panelElements}</div>
-  );
+  return <div>{panelElements}</div>;
 
 }

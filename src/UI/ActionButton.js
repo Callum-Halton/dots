@@ -10,13 +10,18 @@ const ColorButton = withStyles((theme) => ({
     color: 'white',
     '&:hover': {
       backgroundColor: 'grey',
+     },
+    '&:disabled': {
+    	color: "lightGrey",
+    	backgroundColor: "darkGrey",
     },
   },
 }))(Button);
 
 export default function ActionButton(props) {
-	return(
+	return (
 		<ColorButton
+			disabled={props.disabled}
 			onClick={props.actionCall}
 			startIcon={<FontAwesomeIcon icon={props.icon}/>}
 			size="large"

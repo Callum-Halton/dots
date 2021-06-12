@@ -1,0 +1,18 @@
+.imageTab {
+  width: 50%;
+  outline: 0;
+  border: none;
+  font-size: 20px;
+  color: white;
+  text-align: center;
+  display:  inline-block;
+  padding: 5px;
+  background-color: black;
+}
+
+.nonActive {
+  background-color: grey;
+}
+.nonActive:hover {
+  background: rgb(64, 64, 64);
+}

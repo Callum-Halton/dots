@@ -13,7 +13,6 @@ const BlackCheckbox = withStyles({
       color: "black",
     },
   },
-  checked: {},
 })((props) => <Checkbox color="default" {...props} />);
 
 const blackStyle = {
@@ -93,7 +92,7 @@ export default function OptionCard(props) {
     			{props.name}
     		</span>
     	</td>
-    	<td /*style={{paddingTop: "14px"}}*/>
+    	<td>
     		{input}
     	</td>
     </tr>

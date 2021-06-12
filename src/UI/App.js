@@ -3,6 +3,10 @@ import './App.css';
 import React, { Component } from 'react';
 import OptionsPanel from './OptionsPanel.js';
 import Stage from './Stage.js';
+import TitleBar from './TitleBar.js';
+import { SourceImage,
+         SampleOptions } from '../Processing/samplePrepClasses.js'
+import getSample from '../Processing/getSample.js'
 
 class IntOptionInfo {
   constructor(showSlider, min, max, strictMax, minDependency, maxDependency) {
@@ -29,25 +33,26 @@ class Option {
   }
 }
 
-const titleBarStyle = {
-  backgroundColor: "black",
-  marginBottom: "2px",
-  width: "100%",
-  height: "60px",
-  flex: "0 0 auto",
-}
-
-function TitleBar() {
-  return (
-    <div style={titleBarStyle} />
-  );
+class SourceImageInfo {
+  constructor(name, width, height) {
+    this.name = name;
+    this.width = width;
+    this.height = height;
+  }
 }
 
 export default class App extends Component {
   constructor(props) {
     super(props);
+    this.canvasRefs = {
+      source: null,
+      art: null,
+    }
+    this.sourceImage = null;
+
     this.state = {
-      openOptionPanel: null,//'sample',
+      sourceImageInfo: null,
+      openOptionPanel: null,
       options: {
         sample: {
           sampleLimit: new Option(
@@ -102,11 +107,53 @@ export default class App extends Component {
         }
       }
     }
+    this.changeSourceImage = this.changeSourceImage.bind(this);
     this.changeOptionVal = this.changeOptionVal.bind(this);
     this.togglePanel = this.togglePanel.bind(this);
     this.sampleNow = this.sampleNow.bind(this);
     this.renderNow = this.renderNow.bind(this);
+    this.setCanvasRef = this.setCanvasRef.bind(this);
+    //this.download = this.download.bind(this);
 
+  }
+
+  setCanvasRef(tabType, ref) {
+    this.canvasRefs[tabType] = ref;
+  }
+
+  changeSourceImage(newSourceImage) {
+    let srcCanvas = this.canvasRefs.source;
+    var ctx = srcCanvas.getContext('2d');
+    var img = new Image();
+    img.src = URL.createObjectURL(newSourceImage);
+    img.onload = () => {
+      let { width, height } = img;
+      this.setState({
+        sourceImageInfo: new SourceImageInfo(newSourceImage.name, width, height)
+      });
+      srcCanvas.width = width;
+      srcCanvas.height = height;
+      ctx.drawImage(img, 0, 0);
+
+      let imgData = ctx.getImageData(0, 0, width, height);
+      let pixels = imgData.data;
+      let condensedPixels = [];
+      for (let i = 0; i < pixels.length; i += 4) {
+        let l = 0.34 * pixels[i] + 0.5 * pixels[i + 1]
+          + 0.16 * pixels[i + 2];
+        pixels[i] = l;
+        pixels[i + 1] = l;
+        pixels[i + 2] = l;
+        condensedPixels.push(l);
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      this.sourceImage = new SourceImage(condensedPixels, width, height);
+
+      if (this.state.openOptionPanel !== 'sample') {
+        this.togglePanel('sample');
+      }
+    }
   }
 
   sampleNow() {
@@ -130,13 +177,23 @@ export default class App extends Component {
         }
       });
     });
-    this.togglePanel('render');
+
+    let sample = getSample(
+      this.sourceImage,
+      new SampleOptions(this.state.options.sample)
+    );
+    //this.togglePanel('render');
+
   }
 
   renderNow() {
     console.log('render');
   }
-
+/*
+  download() {
+    console.log('downloaded');
+  }
+*/
   changeOptionVal(optionGroupKey, optionKey, newVal) {
     let optionGroup = this.state.options[optionGroupKey]
     let intOptionInfo = optionGroup[optionKey].intOptionInfo;
@@ -177,22 +234,24 @@ export default class App extends Component {
 
   togglePanel(title) {
     this.setState(prevState => ({
-        ...prevState,
-        openOptionPanel: prevState.openOptionPanel === title ? null : title
+      ...prevState,
+      openOptionPanel: prevState.openOptionPanel === title ? null : title,
     }));
   }
 
   render () {
-    let { openOptionPanel, options } = this.state;
+    let { state } = this;
+    let { options } = state;
     let appElements = [<TitleBar key="TitleBar" />];
     for (let optionGroupKey in options) {
       appElements.push(
         <OptionsPanel
+          disableActionButton={state.sourceImageInfo ? false : true}
           optionGroupKey={optionGroupKey}
           actionCall={this[`${optionGroupKey}Now`]}
           relevantOptions={options[optionGroupKey]}
           changeOptionVal={this.changeOptionVal}
-          open={openOptionPanel === optionGroupKey}
+          open={state.openOptionPanel === optionGroupKey}
           togglePanel={this.togglePanel}
           top={optionGroupKey === "sample"}
           key={optionGroupKey}
@@ -202,7 +261,9 @@ export default class App extends Component {
       if (optionGroupKey === "sample") {
         appElements.push(
           <Stage
-            blackBackground={options.render.whiteDotsOnBlackBackground.val}
+            setCanvasRef={this.setCanvasRef}
+            sourceImageInfo={state.sourceImageInfo}
+            changeSourceImage={this.changeSourceImage}
             key="Stage"
           />
         );
@@ -213,7 +274,7 @@ export default class App extends Component {
       <div
         style={{
           display: "flex",
-          flexFlow: "column",
+          flexDirection: "column",
           height: "100vh",
         }}
       >
@@ -222,26 +283,3 @@ export default class App extends Component {
     );
   }
 }
-
-/*
-<TitleBar/>
-        <OptionsPanel
-          optionGroupKey="sample"
-          actionCall={this.sampleNow}
-          relevantOptions={options.sample}
-          changeOptionVal={this.changeOptionVal}
-          open={openOptionPanel === "sample"}
-          togglePanel={this.togglePanel}
-          top={true}
-        />
-
-        <OptionsPanel
-          optionGroupKey="render"
-          actionCall={this.renderNow}
-          relevantOptions={options.render}
-          changeOptionVal={this.changeOptionVal}
-          open={openOptionPanel === "render"}
-          togglePanel={this.togglePanel}
-          top={false}
-        />
-*/
