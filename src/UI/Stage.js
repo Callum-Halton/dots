@@ -44,14 +44,12 @@ export default class Stage extends Component {
 
     this.state = {
       sourceImageProvided: false,
-      activeTab: 'select',
       // short for magnifications
       mags: {
         source: 1,
         art: 1,
       }
     };
-    this.changeActiveTab = this.changeActiveTab.bind(this);
     this.changeMag = this.changeMag.bind(this);
     this.select = this.select.bind(this);
     this.handleFile = this.handleFile.bind(this);
@@ -70,12 +68,6 @@ export default class Stage extends Component {
     }
   }
 
-  changeActiveTab(newActiveTab) {
-    this.setState({
-      activeTab: newActiveTab,
-    });
-  }
-
   select() { document.getElementById('fileInput').click(); }
 
   handleFile(e) {
@@ -83,7 +75,7 @@ export default class Stage extends Component {
       sourceImageProvided: true
     });
     this.props.changeSourceImage(e.target.files[0])
-    this.changeActiveTab('source');
+    this.props.changeActiveTab('source');
   }
 
   download() {
@@ -99,7 +91,7 @@ export default class Stage extends Component {
 
   componentDidUpdate() {
     let container = this.containerRef.current;
-    let { activeTab } = this.state;
+    let { activeTab } = this.props;
     let relevantMag = this.state.mags[activeTab];
     let relevantCanvas = this.canvasRefs[activeTab]
     if (container && relevantCanvas) {
@@ -126,7 +118,8 @@ export default class Stage extends Component {
   }
 
   render() {
-    let { activeTab, mags } = this.state;
+    let { activeTab, sizes } = this.props;
+    let { mags } = this.state;
     let relevantAction = Stage.actionsByTab[activeTab]
 
     let container = this.containerRef.current;
@@ -173,17 +166,15 @@ export default class Stage extends Component {
               style={{width: "100%", height: "37px", background: "black"}} /> :
             <ImageTabs
               activeTab={activeTab}
-              changeActiveTab={
-                newActiveTab => this.changeActiveTab(newActiveTab)
-              }
+              changeActiveTab={this.props.changeActiveTab}
             />
           }
           <div style={toolsStyle} >
             <StageButton
               action={relevantAction}
               actionCall={
-                activeTab === 'source' ? () => this.changeActiveTab('select') :
-                this[relevantAction]
+                activeTab === 'source' ?
+                () => this.props.changeActiveTab('select') : this[relevantAction]
               }
               key="Main StageButton"
             />
@@ -191,12 +182,15 @@ export default class Stage extends Component {
               ( this.state.sourceImageProvided ?
                 <StageButton
                 action="cancel"
-                actionCall={() => this.changeActiveTab('source')}
+                actionCall={() => this.props.changeActiveTab('source')}
                 key="Cancel"
               /> : '' ) : [
-              <span style={{marginTop: "6px"}} key="File Name" >
-                {sourceImageInfo ? sourceImageInfo.name
-                  : "No Source Image Selected"}
+              <span style={{marginTop: "6px"}} key="Info Text" >
+                {
+                activeTab === 'source' ? (sourceImageInfo ?
+                sourceImageInfo.name : "No Source Image Selected")
+                : `${sizes.render === null ? 0 : sizes.render} / ${sizes.sample === null ? 0 : sizes.sample}`
+                }
               </span>,
               <MagnificationInput
                 mag={mags[activeTab]}

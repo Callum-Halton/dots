@@ -1,4 +1,4 @@
-// All used by app.js in creating parameters for getSample(...)
+// All used by app.js in creating data for processor.js
 export class SourceImage {
   constructor(pixels, width, height) {
     this.pixels = pixels;
@@ -6,21 +6,29 @@ export class SourceImage {
     this.height = height;
   }
 
-  setOwnWidthAndHeightInCells(cellSize) {
-    this.widthInCells = Math.ceil(this.width / cellSize)
-    this.heightInCells = Math.ceil(this.height / cellSize)
-  }
-
-  getPixel(x, y) {
-    return this.pixels[y * this.width + x];
+  static addMethods(sourceImage) {
+    sourceImage.setOwnWidthAndHeightInCells = (cellSize) => {
+      sourceImage.widthInCells = Math.ceil(sourceImage.width / cellSize)
+      sourceImage.heightInCells = Math.ceil(sourceImage.height / cellSize)
+    }
+    sourceImage.getPixel = (x, y) => {
+      return sourceImage.pixels[y * sourceImage.width + x];
+    }
   }
 }
 
-export class SampleOptions {
+class Options {
   constructor(verboseOptions) {
     for (let optionKey in verboseOptions) {
       this[optionKey] = verboseOptions[optionKey].val;
     }
+    this.maxDotIntensity = this.whiteDotsOnBlackBackground ? 255 : 0;
+  }
+}
+
+export class SampleOptions extends Options {
+  constructor(verboseOptions) {
+    super(verboseOptions);
 
     // Computed Constants
     this.sqrMaxExclRadius = this.maxExclRadius ** 2
@@ -33,6 +41,17 @@ export class SampleOptions {
     }
     this.sqrSampleRadius = this.sampleRadius ** 2;
     this.cellSize = Math.floor(this.maxExclRadius / Math.sqrt(2));
-    this.maxDotIntensity = this.whiteDotsOnBlackBackground ? 255 : 0;
+  }
+}
+
+export class RenderOptions extends Options {
+  constructor(verboseOptions) {
+    super(verboseOptions);
+
+    // Computed Constants
+    this.minDotRadius = this.minDotDiameter / 2;
+    this.maxDotRadius = this.maxDotDiameter / 2;
+    this.backgroundIntensity = this.whiteDotsOnBlackBackground ? 0 : 255;
+    this.dotRadCalcConst = (this.maxDotRadius - this.minDotRadius) / 255;
   }
 }

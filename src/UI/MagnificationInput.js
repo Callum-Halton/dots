@@ -7,32 +7,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusSquare,
          faMinusSquare } from '@fortawesome/free-regular-svg-icons';
 
-const CustomTextField = withStyles({
-  root: {
-    width:100,
-    '& .MuiInputBase-root': {
-      color: 'white',
-    },
-    '& .MuiInputLabel-root': {
-      color: 'lightGrey',
-    },
-    '& label.Mui-focused': {
-      color: 'white',
-    },
-    '& .MuiOutlinedInput-root': {
-      '& fieldset': {
-        borderColor: 'grey',
-      },
-      '&:hover fieldset': {
-        borderColor: 'lightGrey',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: 'white',
-      },
-    },
-  }
-})(TextField);
-
 function NumberFormatCustom(props) {
   const { inputRef, onChange, ...other } = props;
 
@@ -60,8 +34,33 @@ NumberFormatCustom.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
-export default function MagnificationInput(props) {
+const CustomTextField = withStyles({
+  root: {
+    width:100,
+    '& .MuiInputBase-root': {
+      color: 'white',
+    },
+    '& .MuiInputLabel-root': {
+      color: 'lightGrey',
+    },
+    '& label.Mui-focused': {
+      color: 'white',
+    },
+    '& .MuiOutlinedInput-root': {
+      '& fieldset': {
+        borderColor: 'grey',
+      },
+      '&:hover fieldset': {
+        borderColor: 'lightGrey',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: 'white',
+      },
+    },
+  }
+})(TextField);
 
+export default function MagnificationInput(props) {
   return (
     <div>
       <CustomTextField
@@ -69,16 +68,15 @@ export default function MagnificationInput(props) {
         label="Magnification"
         value={props.mag}
         onChange={e => props.changeMag(Number(e.target.value))}
-        name="numberformat"
-        id="formatted-numberformat-input"
-        InputProps={{
-          inputComponent: NumberFormatCustom,
-        }}
         InputLabelProps={{
           shrink: true,
         }}
         variant="outlined"
         size="small"
+        name="numberformat"
+        InputProps={{
+          inputComponent: NumberFormatCustom,
+        }}
       />
       <MagnificationButton
         icon={faMinusSquare}

@@ -7,12 +7,7 @@ import IntegerSlider from './IntegerSlider.js';
 
 
 const BlackCheckbox = withStyles({
-  root: {
-    color: "black",
-    '&$checked': {
-      color: "black",
-    },
-  },
+  root: { color: "black" }
 })((props) => <Checkbox color="default" {...props} />);
 
 const blackStyle = {

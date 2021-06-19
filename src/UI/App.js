@@ -5,8 +5,10 @@ import OptionsPanel from './OptionsPanel.js';
 import Stage from './Stage.js';
 import TitleBar from './TitleBar.js';
 import { SourceImage,
-         SampleOptions } from '../Processing/samplePrepClasses.js'
-import getSample from '../Processing/getSample.js'
+         SampleOptions,
+         RenderOptions } from '../Processing/samplePrepClasses.js';
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import Processor from 'workerize-loader!../Processing/processor.js';
 
 class IntOptionInfo {
   constructor(showSlider, min, max, strictMax, minDependency, maxDependency) {
@@ -49,10 +51,18 @@ export default class App extends Component {
       art: null,
     }
     this.sourceImage = null;
+    this.sample = null;
 
     this.state = {
-      sourceImageInfo: null,
+      activeTab: 'select',
       openOptionPanel: null,
+
+      sourceImageInfo: null,
+      sizes: {
+        sample: null,
+        render: null,
+      },
+
       options: {
         sample: {
           sampleLimit: new Option(
@@ -107,14 +117,49 @@ export default class App extends Component {
         }
       }
     }
+
+    this.setCanvasRef = this.setCanvasRef.bind(this);
     this.changeSourceImage = this.changeSourceImage.bind(this);
-    this.changeOptionVal = this.changeOptionVal.bind(this);
+    this.changeActiveTab = this.changeActiveTab.bind(this);
     this.togglePanel = this.togglePanel.bind(this);
+    this.changeOptionVal = this.changeOptionVal.bind(this);
     this.sampleNow = this.sampleNow.bind(this);
     this.renderNow = this.renderNow.bind(this);
-    this.setCanvasRef = this.setCanvasRef.bind(this);
     //this.download = this.download.bind(this);
 
+  }
+
+  componentDidMount() {
+    if (window.Worker) {
+      this.processor = Processor();
+      this.processor.onmessage = (e) => {
+        let { data } = e;
+        if (data.isSize) {
+          this.setState( prevState => ({
+            ...prevState,
+            sizes: {
+              ...prevState.sizes,
+              [data.sizeKey]: data.size,
+            }
+          }));
+
+          if (data.sizeKey === 'sample' &&
+              this.state.openOptionPanel !== 'render') {
+            this.togglePanel('render');
+          }
+        } else {
+          let { x, y, r, l } = data;
+          let ctx = this.canvasRefs.art.getContext('2d');
+          ctx.fillStyle = this.getColorFromIntensity(l);
+          ctx.beginPath();
+          ctx.arc(x, y, r, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+    } else {
+      // replace with screen blocker
+      alert("Your browser doesn't support the required Web Worker API, try updating or switching browsers.");
+    }
   }
 
   setCanvasRef(tabType, ref) {
@@ -122,18 +167,20 @@ export default class App extends Component {
   }
 
   changeSourceImage(newSourceImage) {
-    let srcCanvas = this.canvasRefs.source;
-    var ctx = srcCanvas.getContext('2d');
-    var img = new Image();
+    let { canvasRefs } = this;
+    let srcCanvas = canvasRefs.source;
+    let artCanvas = canvasRefs.art;
+    let ctx = srcCanvas.getContext('2d');
+    let img = new Image();
     img.src = URL.createObjectURL(newSourceImage);
     img.onload = () => {
       let { width, height } = img;
+      srcCanvas.width = artCanvas.width = width;
+      srcCanvas.height = artCanvas.height = height;
+      ctx.drawImage(img, 0, 0);
       this.setState({
         sourceImageInfo: new SourceImageInfo(newSourceImage.name, width, height)
       });
-      srcCanvas.width = width;
-      srcCanvas.height = height;
-      ctx.drawImage(img, 0, 0);
 
       let imgData = ctx.getImageData(0, 0, width, height);
       let pixels = imgData.data;
@@ -160,7 +207,7 @@ export default class App extends Component {
     this.setState(prevState => {
       let { options } = prevState;
       let varyDotDensity = options.sample.varyDotDensity.val;
-      return({
+      return ({
         ...prevState,
         options: {
             ...options,
@@ -178,17 +225,31 @@ export default class App extends Component {
       });
     });
 
-    let sample = getSample(
-      this.sourceImage,
-      new SampleOptions(this.state.options.sample)
-    );
-    //this.togglePanel('render');
-
+    this.processor.postMessage({
+      shouldSample: true,
+      sourceImage: this.sourceImage,
+      options: new SampleOptions(this.state.options.sample),
+    });
   }
 
   renderNow() {
-    console.log('render');
+    if (this.state.openOptionPanel === 'render') {
+      this.togglePanel('render');
+    }
+    this.changeActiveTab('art');
+    let renderOptions = new RenderOptions(this.state.options.render);
+    let artCanvas = this.canvasRefs.art;
+    let ctx = artCanvas.getContext('2d');
+    ctx.fillStyle = this.getColorFromIntensity(
+      renderOptions.backgroundIntensity);
+    ctx.fillRect(0, 0, artCanvas.width, artCanvas.height);
+    this.processor.postMessage({shouldSample: false, options: renderOptions,});
   }
+
+  getColorFromIntensity(l) {
+    return `rgb(${l}, ${l}, ${l})`;
+  }
+
 /*
   download() {
     console.log('downloaded');
@@ -232,6 +293,12 @@ export default class App extends Component {
     }
   }
 
+  changeActiveTab(newActiveTab) {
+    this.setState({
+      activeTab: newActiveTab,
+    });
+  }
+
   togglePanel(title) {
     this.setState(prevState => ({
       ...prevState,
@@ -246,7 +313,10 @@ export default class App extends Component {
     for (let optionGroupKey in options) {
       appElements.push(
         <OptionsPanel
-          disableActionButton={state.sourceImageInfo ? false : true}
+          disableActionButton={
+            optionGroupKey === "sample" ? (state.sourceImageInfo ? false : true)
+            : state.sizes.sample === null
+          }
           optionGroupKey={optionGroupKey}
           actionCall={this[`${optionGroupKey}Now`]}
           relevantOptions={options[optionGroupKey]}
@@ -261,6 +331,9 @@ export default class App extends Component {
       if (optionGroupKey === "sample") {
         appElements.push(
           <Stage
+            sizes={this.state.sizes}
+            changeActiveTab={this.changeActiveTab}
+            activeTab={state.activeTab}
             setCanvasRef={this.setCanvasRef}
             sourceImageInfo={state.sourceImageInfo}
             changeSourceImage={this.changeSourceImage}

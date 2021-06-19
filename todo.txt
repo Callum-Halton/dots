@@ -1,0 +1,10 @@
+bugs to fix:
+2. fix maginfication bug
+3. small height panel overlap
+4. improve optionscard responsiveness
+
+features to add:
+1. have sizes update every however many dots
+2. add explanations when action buttons disabled next to action buttons or counts
+3. say ...  points/dots sampled/rendered (so far)
+4. 
