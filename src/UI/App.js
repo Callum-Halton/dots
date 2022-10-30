@@ -10,6 +10,11 @@ import { SourceImage,
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import Processor from 'workerize-loader!../Processing/processor.js';
 
+function ProcessState() {
+  this.progress = null; // 'started'/'completed'
+  this.size = 0;
+}
+
 class IntOptionInfo {
   constructor(showSlider, min, max, strictMax, minDependency, maxDependency) {
     this.showSlider = showSlider;
@@ -46,21 +51,16 @@ class SourceImageInfo {
 export default class App extends Component {
   constructor(props) {
     super(props);
-    this.canvasRefs = {
-      source: null,
-      art: null,
-    }
-    this.sourceImage = null;
-    this.sample = null;
-
+    this.canvasRefs = { /*source: null, art: null*/ };
+    this.validRenderID = 0;
     this.state = {
       activeTab: 'select',
       openOptionPanel: null,
 
       sourceImageInfo: null,
-      sizes: {
-        sample: null,
-        render: null,
+      processStates: {
+        sample: new ProcessState(),
+        render: new ProcessState(),
       },
 
       options: {
@@ -71,7 +71,7 @@ export default class App extends Component {
           ),
           maxExclRadius: new Option(
             24, 'Exclusion Radius',
-            new IntOptionInfo(20, 1, 40, false, 'minExclRadius'),
+            new IntOptionInfo(20, 2, 40, false, 'minExclRadius'),
             'varyDotDensity', false, false, 'Max '
           ),
           varyDotDensity: new Option(true, 'Vary Dot Density'),
@@ -129,31 +129,76 @@ export default class App extends Component {
 
   }
 
+  updateProcessStateVal(processKey, stateKeyToChange, newVal) {
+    this.setState( prevState => ({
+      ...prevState,
+      processStates: {
+        ...prevState.processStates,
+        [processKey]: {
+          ...prevState.processStates[processKey],
+          [stateKeyToChange]: newVal
+        }
+      }
+    }));
+    if (stateKeyToChange === 'sample'
+        && this.state.processStates[processKey].progress !== 'started') {
+      this.updateProcessStateVal(processKey, 'progress', 'started');
+    }
+  }
+
   componentDidMount() {
+    this.initiateProcessor();
+  }
+
+  initiateProcessor() {
     if (window.Worker) {
       this.processor = Processor();
       this.processor.onmessage = (e) => {
         let { data } = e;
-        if (data.isSize) {
-          this.setState( prevState => ({
-            ...prevState,
-            sizes: {
-              ...prevState.sizes,
-              [data.sizeKey]: data.size,
-            }
-          }));
+        switch(data.type) {
+          case 'sampleSize':
+            this.updateProcessStateVal('sample', 'size', data.size);
+            /*if (data.isCompleted && this.state.openOptionPanel !== 'render') {
+              this.togglePanel('render');
+            }*/
+            break;
 
-          if (data.sizeKey === 'sample' &&
-              this.state.openOptionPanel !== 'render') {
-            this.togglePanel('render');
-          }
-        } else {
-          let { x, y, r, l } = data;
-          let ctx = this.canvasRefs.art.getContext('2d');
-          ctx.fillStyle = this.getColorFromIntensity(l);
-          ctx.beginPath();
-          ctx.arc(x, y, r, 0, 2 * Math.PI);
-          ctx.fill();
+          case 'completionMsg':
+            this.updateProcessStateVal(data.processKey, 'progress', 'completed');
+            if (data.processKey === 'sample') {
+              if (this.state.openOptionPanel !== 'render') {
+                this.togglePanel('render');
+              }
+            } else {
+              this.updateProcessStateVal('render', 'size', this.dotsRenderedPrecise);
+            }
+            break;
+
+          case 'dotInfo':
+            if (data.renderID === this.validRenderID) {
+              if (data.drawDot) {
+                let { x, y, r, l } = data;
+                this.dotsRenderedPrecise++;
+                let t1 = performance.now();
+                // 30fps
+                if (t1 - this.t0 >= 100/3) {
+                  this.updateProcessStateVal('render', 'size', this.dotsRenderedPrecise);
+                  this.t0 = t1;
+                }
+                let ctx = this.canvasRefs.art.getContext('2d');
+                ctx.fillStyle = this.getColorFromIntensity(l);
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, 2 * Math.PI);
+                ctx.fill();
+              }
+              this.processor.postMessage({ command: 'getDotInfo' });
+            } else {
+              console.log(data.renderID, this.validRenderID)
+            }
+            break;
+
+          default:
+            console.log('Processor Initiated');
         }
       }
     } else {
@@ -200,6 +245,7 @@ export default class App extends Component {
       if (this.state.openOptionPanel !== 'sample') {
         this.togglePanel('sample');
       }
+      this.changeActiveTab('source');
     }
   }
 
@@ -210,40 +256,62 @@ export default class App extends Component {
       return ({
         ...prevState,
         options: {
-            ...options,
-            render: {
-                ...options.render,
-                whiteDotsOnBlackBackground: {
-                  ...options.render.whiteDotsOnBlackBackground,
-                  val: varyDotDensity ?
-                    options.sample.whiteDotsOnBlackBackground.val :
-                    options.render.whiteDotsOnBlackBackground.val,
-                  disabled: varyDotDensity
-                }
+          ...options,
+          render: {
+            ...options.render,
+            whiteDotsOnBlackBackground: {
+              ...options.render.whiteDotsOnBlackBackground,
+              val: varyDotDensity ?
+                options.sample.whiteDotsOnBlackBackground.val :
+                options.render.whiteDotsOnBlackBackground.val,
+              disabled: varyDotDensity
             }
+          }
         }
       });
     });
 
+    let { processStates } = this.state;
+    if (processStates.sample.progress === 'started') {
+      this.processor.terminate();
+      this.initiateProcessor();
+    }
+    if (processStates.render.progress) {
+      this.validRenderID++;
+      this.updateProcessStateVal('render', 'progress', null);
+      this.updateProcessStateVal('render', 'size', 0);
+      let artCanvas = this.canvasRefs.art;
+      let ctx = artCanvas.getContext('2d');
+      ctx.clearRect(0, 0, artCanvas.width, artCanvas.height);
+    }
     this.processor.postMessage({
-      shouldSample: true,
+      command: 'sample',
       sourceImage: this.sourceImage,
       options: new SampleOptions(this.state.options.sample),
     });
+    this.updateProcessStateVal('sample', 'progress', 'started');
   }
 
   renderNow() {
+    this.validRenderID++;
     if (this.state.openOptionPanel === 'render') {
       this.togglePanel('render');
     }
     this.changeActiveTab('art');
+
     let renderOptions = new RenderOptions(this.state.options.render);
     let artCanvas = this.canvasRefs.art;
     let ctx = artCanvas.getContext('2d');
     ctx.fillStyle = this.getColorFromIntensity(
       renderOptions.backgroundIntensity);
     ctx.fillRect(0, 0, artCanvas.width, artCanvas.height);
-    this.processor.postMessage({shouldSample: false, options: renderOptions,});
+
+    this.dotsRenderedPrecise = 0;
+    this.updateProcessStateVal('render', 'progress', 'started');
+    this.t0 = performance.now();
+    this.processor.postMessage({
+      command: 'prepRender', options: renderOptions, renderID: this.validRenderID
+    });
   }
 
   getColorFromIntensity(l) {
@@ -313,9 +381,10 @@ export default class App extends Component {
     for (let optionGroupKey in options) {
       appElements.push(
         <OptionsPanel
+          processState={state.processStates[optionGroupKey]}
           disableActionButton={
             optionGroupKey === "sample" ? (state.sourceImageInfo ? false : true)
-            : state.sizes.sample === null
+            : state.processStates.sample.progress !== 'completed'
           }
           optionGroupKey={optionGroupKey}
           actionCall={this[`${optionGroupKey}Now`]}
@@ -331,7 +400,7 @@ export default class App extends Component {
       if (optionGroupKey === "sample") {
         appElements.push(
           <Stage
-            sizes={this.state.sizes}
+            processStates={this.state.processStates}
             changeActiveTab={this.changeActiveTab}
             activeTab={state.activeTab}
             setCanvasRef={this.setCanvasRef}

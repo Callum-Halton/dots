@@ -33,7 +33,7 @@ export default class Point {
 	        	&& (squareSample || (this.x - x) ** 2 + (this.y - y) ** 2
 	          <= options.sqrSampleRadius)) {
           totLuminosity += sourceImage.getPixel(x, y);
-          pixelsSampled += 1;
+          pixelsSampled++;
         }
       }
     }

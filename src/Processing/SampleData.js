@@ -39,7 +39,7 @@ export default class SampleData {
   addPoint(point) {
     this.points.push(point);
     this.activePoints.push(point);
-    this.activePointsCount += 1;
+    this.activePointsCount++;
     let cellPos = point.cellPos;
     this.cells[cellPos.row][cellPos.col].push(point);
   }

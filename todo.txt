@@ -1,10 +1,13 @@
 bugs to fix:
 2. fix maginfication bug
 3. small height panel overlap
-4. improve optionscard responsiveness
+4. improve optioncard width responsiveness
+5. converts dots logo to svg
 
 features to add:
-1. have sizes update every however many dots
 2. add explanations when action buttons disabled next to action buttons or counts
 3. say ...  points/dots sampled/rendered (so far)
-4. 
+4. have tooltips for iconbuttons in menu bar
+5. save settings in localstorage
+6. have overall info popup for first time users
+7. allow user to specify background colour and dot intensity colour channel

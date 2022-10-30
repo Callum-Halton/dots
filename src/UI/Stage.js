@@ -2,6 +2,7 @@ import React, { Component, Fragment } from 'react';
 import MagnificationInput from './MagnificationInput.js';
 import StageButton from './StageButton.js';
 import ImageTabs from './ImageTabs.js';
+import { DarkProcessSize } from './ProcessSize.js';
 
 const stageControlsStyle = {
   marginTop: "2px",
@@ -14,7 +15,7 @@ const toolsStyle = {
   padding: "10px",
   color: "lightGrey",
   fontSize: "20px",
-}
+};
 
 const containerStyle = {
   flexGrow : 1,
@@ -24,6 +25,14 @@ const containerStyle = {
   justifyContent: "center",
   overflow: "scroll",
   marginBottom: "2px"
+};
+
+const sizesStyle = {
+  width: "200px",
+  height: "25px",
+  display: 'flex',
+  justifyContent: 'space-between',
+  marginTop: "6px",
 }
 
 export default class Stage extends Component {
@@ -43,7 +52,6 @@ export default class Stage extends Component {
     }
 
     this.state = {
-      sourceImageProvided: false,
       // short for magnifications
       mags: {
         source: 1,
@@ -52,7 +60,6 @@ export default class Stage extends Component {
     };
     this.changeMag = this.changeMag.bind(this);
     this.select = this.select.bind(this);
-    this.handleFile = this.handleFile.bind(this);
     this.download = this.download.bind(this);
   }
 
@@ -69,14 +76,6 @@ export default class Stage extends Component {
   }
 
   select() { document.getElementById('fileInput').click(); }
-
-  handleFile(e) {
-    this.setState({
-      sourceImageProvided: true
-    });
-    this.props.changeSourceImage(e.target.files[0])
-    this.props.changeActiveTab('source');
-  }
 
   download() {
     console.log('downloaded')
@@ -118,7 +117,7 @@ export default class Stage extends Component {
   }
 
   render() {
-    let { activeTab, sizes } = this.props;
+    let { activeTab, processStates } = this.props;
     let { mags } = this.state;
     let relevantAction = Stage.actionsByTab[activeTab]
 
@@ -145,7 +144,7 @@ export default class Stage extends Component {
       let relevantMag = mags[tabType];
       return (
         <canvas
-          style={{
+          style={{// not sure ternary expressions are neccessary here!!!!!!!
             display: activeTab === tabType ? 'block' : "none",
             width: canvasWidth ? `${canvasWidth * relevantMag}px` : `${maxW}px`,
             height: canvasHeight ? `${canvasHeight * relevantMag}px`
@@ -179,19 +178,30 @@ export default class Stage extends Component {
               key="Main StageButton"
             />
             {activeTab === 'select' ?
-              ( this.state.sourceImageProvided ?
+              ( sourceImageInfo ?
                 <StageButton
                 action="cancel"
                 actionCall={() => this.props.changeActiveTab('source')}
                 key="Cancel"
               /> : '' ) : [
-              <span style={{marginTop: "6px"}} key="Info Text" >
-                {
-                activeTab === 'source' ? (sourceImageInfo ?
-                sourceImageInfo.name : "No Source Image Selected")
-                : `${sizes.render === null ? 0 : sizes.render} / ${sizes.sample === null ? 0 : sizes.sample}`
-                }
-              </span>,
+              activeTab === 'source' ?
+                <span style={{marginTop: "6px"}} key="Info Text" >
+                  { sourceImageInfo ?
+                    sourceImageInfo.name : "No Source Image Selected"
+                  }
+                </span> :
+                <div style={sizesStyle } key="sizes">
+                  <DarkProcessSize
+                    isUpdating={processStates.render.progress === 'started'}
+                    size={processStates.render.size}
+                  />
+                  /
+                  <DarkProcessSize
+                    isUpdating={processStates.sample.progress === 'started'}
+                    size={processStates.sample.size}
+                  />
+                </div>
+              ,
               <MagnificationInput
                 mag={mags[activeTab]}
                 changeMag={newMag => this.changeMag(activeTab, newMag)}
@@ -205,7 +215,7 @@ export default class Stage extends Component {
               id="fileInput"
               accept="image/*"
               style={{display: "none"}}
-              onChange={(e) => this.handleFile(e)}
+              onChange={(e) => this.props.changeSourceImage(e.target.files[0])}
             /> : ''
           }
         </div>
