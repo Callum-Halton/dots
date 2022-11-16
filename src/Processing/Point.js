@@ -42,7 +42,7 @@ export default class Point {
     if (options.varyDotDensity) {
       this.r = options.minExclRadius
         + Math.floor(Math.abs(options.maxDotIntensity - this.l)
-        / 255 * options.maxExclRadius);
+        / 255 * options.maxExclRadius /*should really be options.exclRadiusDiff*/);
       this.doubleR = this.r * 2;
       this.sqrR = this.r ** 2;
     }

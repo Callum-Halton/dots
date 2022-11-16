@@ -138,16 +138,18 @@ export default class SampleData {
     for (let i = 0; i < options.sampleLimit; i++) {
       let angle = randRange(0, 2 * Math.PI);
       let dist = randRange(spawnPoint.r, spawnPoint.doubleR);
-      let f = spawnPoint.doubleR / spawnPoint.r;
+      /*let f = spawnPoint.doubleR / spawnPoint.r;
       if (f !== 2) {
         console.log(f);
-      }
+      }*/
       let candidatePoint = new Point(
         Math.floor(spawnPoint.x + (dist * Math.cos(angle))),
         Math.floor(spawnPoint.y + (dist * Math.sin(angle))), options
       );
       if (this.pointIsValid(candidatePoint, sourceImage, options)) {
-        candidatePoint.computeL(sourceImage, false, options);
+        if (!options.varyDotDensity) {
+          candidatePoint.computeL(sourceImage, false, options);
+        }
         return candidatePoint;
       }
     }

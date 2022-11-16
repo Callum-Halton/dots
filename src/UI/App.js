@@ -71,7 +71,7 @@ export default class App extends Component {
           ),
           maxExclRadius: new Option(
             24, 'Exclusion Radius',
-            new IntOptionInfo(20, 2, 40, false, 'minExclRadius'),
+            new IntOptionInfo(true, 2, 40, false, 'minExclRadius'),
             'varyDotDensity', false, false, 'Max '
           ),
           varyDotDensity: new Option(true, 'Vary Dot Density'),
@@ -158,9 +158,6 @@ export default class App extends Component {
         switch(data.type) {
           case 'sampleSize':
             this.updateProcessStateVal('sample', 'size', data.size);
-            /*if (data.isCompleted && this.state.openOptionPanel !== 'render') {
-              this.togglePanel('render');
-            }*/
             break;
 
           case 'completionMsg':
